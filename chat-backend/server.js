@@ -33,8 +33,17 @@ const filePath = './messages.json';
 io.on('connection', async (socket) => {
 
   console.log(`User with ID : ${socket.id} CONNECTED`);
-
-  let messages = await Message.find().sort({ timeStamp: 1 });
+  let messages = [];
+try{
+ messages =  getMessagesFromFile();
+  if(messages.length < 20 || null) { 
+    // first i applied with only !messages.length but later it causes cutting of data as when it fills again then it can only show those messages however database contains all previous data so i put condition like if messages are < 20 then it can only fetch from db as db is persistent and have more data
+    // console.log("Data returning from MongoDB");
+    messages = await Message.find().sort({ timeStamp: 1 });
+  }
+}catch(err) { 
+  throw new Error("Some error occured", err); 
+}
   io.emit("chatHistory", messages); // Broadcast to all users
 
   // Listen for new messages
@@ -82,7 +91,8 @@ function getMessagesFromFile(){
     if(fs.existsSync(filePath)){
       const data = fs.readFileSync(filePath, 'utf-8');
       if(data){
-      return JSON.parse(data).sort((a,b)=> a.timeStamp - b.timeStamp);
+      // console.log("Data returning from messages.json");
+      return JSON.parse(data).sort((a,b)=> a.timeStamp - b.timeStamp).slice(-100); // showing only 100 recent messages if present
       }
     }
   }catch(err){
