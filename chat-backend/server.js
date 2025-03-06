@@ -29,46 +29,26 @@ const filePath = './messages.json';
 
 
 
-function getMessagesFromFile(){
-  try{
-    if(fs.existsSync(filePath)){
-      const data = fs.readFileSync(filePath, 'utf-8');
-      if(data){
-      return JSON.parse(data).sort((a,b)=> a.timeStamp - b.timeStamp);
-      }
-    }
-  }catch(err){
-    console.log("Error reading files ", err);
-  }
-  return null;
-}
 
 io.on('connection', async (socket) => {
+
   console.log(`User with ID : ${socket.id} CONNECTED`);
 
-
-  let messages = getMessagesFromFile();
-
-  if (!messages.length) {
-    messages = await Message.find().sort({ timeStamp: 1 });
-  }
-    
+  let messages = await Message.find().sort({ timeStamp: 1 });
   io.emit("chatHistory", messages); // Broadcast to all users
 
-  
- 
   // Listen for new messages
   socket.on('newMessage', async (data) => {
-    console.log("Data to be saved : ",data);
+    // console.log("Data to be saved : ",data);
       const message = new Message(data);
-      console.log(message, "Before saving");
+      // console.log(message, "Before saving");
       await message.save();
       saveMsgToFile(data);
       io.emit('message', data);
   });
 
   socket.on('disconnect', () => {
-      console.log('🔴 A user disconnected');
+      console.log(`User with ID : ${socket.id} DisConnected`);
   });
 });
 
@@ -95,3 +75,18 @@ function saveMsgToFile(message){
   messages.push(message);
   fs.writeFileSync(filePath, JSON.stringify(messages, null, 2));
 };
+
+// Implemented function to getMessagesFromFile also
+function getMessagesFromFile(){
+  try{
+    if(fs.existsSync(filePath)){
+      const data = fs.readFileSync(filePath, 'utf-8');
+      if(data){
+      return JSON.parse(data).sort((a,b)=> a.timeStamp - b.timeStamp);
+      }
+    }
+  }catch(err){
+    console.log("Error reading files ", err);
+  }
+  return null;
+}
